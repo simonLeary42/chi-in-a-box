@@ -123,6 +123,7 @@ nova_enabled_filters: "RetryFilter,ComputeCapabilitiesFilter,ImagePropertiesFilt
 
 # Prometheus
 enable_prometheus: no
+prometheus_bind_address: "{{ lookup('vars', 'ansible_' + network_interface).ipv4.address }}"
 
 # Swift
 enable_swift: no
