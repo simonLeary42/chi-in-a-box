@@ -1,22 +1,59 @@
 #!/usr/bin/env bash
 set -e -u -o pipefail
 
-snapshot_file="${1:-}"
-binlog_file="${2:-}"
-binlog_pos="${3:-}"
+include_endpoints=1
 
-if [[ ! -f "$snapshot_file" || -z "$binlog_file" || -z "$binlog_pos" ]]; then
+log() {
+  echo "$@" >&2
+}
+
+usage() {
   cat <<USAGE
-Usage: $(basename $0) <snapshot_file> <binlog_file> <binlog_position>
+Usage: mysql_replication_restore [--host <host>] [--no-endpoints] <snapshot_file> <binlog_file> <binlog_position>
 
 Restores slave replication by bringing the replicated database in sync
 with the tables on the master server, then restarting replication from
 the given binlog file and position captured at time of snapshot.
 
-Example: $(basename $0) mysql_snapshot.sql mariadb-bin.0000001 123456
+Options:
+  --host:         The MySQL host to restore to. Defaults to local socket connection.
+  --no-endpoints: Do not restore the endpoints-related data from the snapshot.
+
+Example: mysql_replication_restore mysql_snapshot.sql mariadb-bin.0000001 123456
 
 USAGE
   exit 1
+}
+
+declare -a POSARGS
+while [[ $# -gt 0 ]]; do
+key="$1"
+case $key in
+  --host)
+    mysql_host="$2"
+    shift
+    shift
+  ;;
+  --no-endpoints)
+    include_endpoints=0
+    shift
+  ;;
+  -h|--help)
+    usage
+  ;;
+  *)
+    POSARGS+=($key)
+    shift
+  ;;
+esac
+done
+
+snapshot_file="${POSARGS[0]}"
+binlog_file="${POSARGS[1]}"
+binlog_pos="${POSARGS[2]}"
+
+if [[ ! -f "$snapshot_file" || -z "$binlog_file" || -z "$binlog_pos" ]]; then
+  usage
 fi
 
 read_snapshot() {
@@ -29,39 +66,61 @@ read_snapshot() {
   fi
 }
 
-echo "Stopping slave"
-mysql <<SQL
+_do() {
+  if [[ -n "${mysql_host:-}" ]]; then
+    ssh -o LogLevel=error "$mysql_host" "$@"
+  else
+    "$@"
+  fi
+}
+
+log "Stopping slave ..."
+_do mysql <<SQL
 stop slave;
 SQL
 
 tmpfile="$(mktemp)"
 backup_file="$HOME/keystone-backup-$(date +'%Y%m%d%H%M').sql"
-echo "Backing up database to $backup_file"
-mysqldump keystone > "$backup_file"
-echo "Snapshotting non-replicated tables to $tmpfile"
-mysqldump keystone trust trust_role revocation_event > "$tmpfile"
+
+log "Backing up database to $backup_file ..."
+_do mysqldump keystone > "$backup_file"
+
+log "Snapshotting non-replicated tables to $tmpfile ..."
+declare -a nonrepl_tables=(trust trust_role revocation_event)
+if [[ $include_endpoints == 0 ]]; then
+  nonrepl_tables+=(endpoint endpoint_group project_endpoint project_endpoint_group)
+fi
+_do mysqldump keystone "${nonrepl_tables[@]}" > "$tmpfile"
 
 read -p "About to drop the slave database. You sure you're ready? [y/N]: " -n 1 -r
-echo
+log
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-  echo "Dropping and recreating slave database"
-  mysql <<SQL
+  log "Dropping and recreating slave database ..."
+  _do mysql <<SQL
 --- Fire the torpedos
 drop database keystone;
 create database keystone;
 SQL
-  echo "Restoring tables from master snapshot"
-  read_snapshot "$snapshot_file" | mysql keystone
-  echo "Restoring non-replicated tables"
-  read_snapshot "$tmpfile" | mysql keystone
-  echo "Reconfiguring replication"
-  mysql <<SQL
+  
+  log "Restoring tables from master snapshot ..."
+  read_snapshot "$snapshot_file" | _do mysql keystone
+  
+  log "Restoring non-replicated tables ..."
+  read_snapshot "$tmpfile" | _do mysql keystone
+  
+  log "Reconfiguring replication ..."
+  _do mysql <<SQL
 change master to master_log_file="$binlog_file", master_log_pos=$binlog_pos;
 start slave;
-show slave status;
 SQL
 
-  echo "Cleaning up temp files"
+  log "Waiting for slave to catch up ..."
+  sleep 5
+  _do mysql <<SQL
+show slave status\G
+SQL
+
+  log "Cleaning up temp files ..."
   rm -f "$tmpfile"
-  echo "Done."
+  log "Done."
 fi
