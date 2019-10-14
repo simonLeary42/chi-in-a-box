@@ -1,39 +1,64 @@
 #!/usr/bin/env bash
 set -e -u -o pipefail
 
-while [[ $# -gt 0 ]]; do
-key="$1"
-case $key in
-  --host)
-  mysql_host="$2"
-  shift
-  shift
-  ;;
-  *)
-  shift
-  ;;
-esac
-done
+include_endpoints=1
 
-if [[ -z "${mysql_host:-}" ]]; then
+log() {
+  echo "$@" >&2
+}
+
+usage() {
   cat <<USAGE
-Usage: $0 --host <host>
+Usage: $0 [--host <host>] [--no-endpoints]
 
 Takes a snapshot of the Keystone database on a given MySQL host and
 records the binlog position so that a slave database can be set up
 for replication.
+
+Options:
+  --host:         Specify the MySQL <host> to connect to. Defaults
+                  to local socket connection.
+  --no-endpoints: Do not include Keystone endpoint tables in the
+                  snapshot. This is useful if you only want to sync
+                  projects/users/tokens across sites but want to
+                  keep managing the service endpoints separately.
 USAGE
   exit 1
-fi
+}
+
+while [[ $# -gt 0 ]]; do
+key="$1"
+case $key in
+  --host)
+    mysql_host="$2"
+    shift
+    shift
+  ;;
+  --no-endpoints)
+    include_endpoints=0
+    shift
+  ;;
+  -h|--help)
+    usage
+  ;;
+  *)
+    shift
+  ;;
+esac
+done
 
 snapshot_file="mysql_keystone_master-$(date +'%Y%m%d%H%M').sql.gz"
 
-remote() {
-  ssh -o LogLevel=error "$mysql_host" "$@"
+_do() {
+  if [[ -n "${mysql_host:-}" ]]; then
+    ssh -o LogLevel=error "$mysql_host" "$@"
+  else
+    "$@"
+  fi
 }
 
-echo "Locking tables"
-remote mysql <<SQL
+log "Locking tables ..."
+binlog_info=$(_do mysql -Ns <<SQL
 --- Ensure all writes flushed and lock tables
 use keystone;
 flush privileges;
@@ -41,16 +66,39 @@ flush tables with read lock;
 -- Get current binlog position
 show master status;
 SQL
+)
+binlog_info="$(awk '{print $1" "$2}' <<<"$binlog_info")"
 
-echo "Dumping table contents to $snapshot_file"
-remote mysqldump keystone \
-  --ignore-table keystone.trust \
-  --ignore-table keystone.trust_role \
-  --ignore-table keystone.revocation_event \
+log "Dumping table contents to $snapshot_file ..."
+declare -a ignored_tables=(
+  keystone.trust
+  keystone.trust_role
+  keystone.revocation_event
+)
+if [[ $include_endpoints == 0 ]]; then
+  ignored_tables+=(
+    keystone.endpoint
+    keystone.endpoint_group
+    keystone.project_endpoint
+    keystone.project_endpoint_group
+    keystone.region
+    keystone.service
+  )
+fi
+_do mysqldump keystone \
+  $(for t in "${ignored_tables[@]}"; do echo "--ignore-table $t"; done) \
   | gzip >"$snapshot_file"
 
-echo "Unlocking tables"
-remote mysql <<SQL
+log "Unlocking tables ..."
+_do mysql <<SQL
 --- Allow writes again
 unlock tables;
 SQL
+
+log "Snapshot complete."
+log 
+log "Master binlog file/position: $binlog_info"
+log "To restore from this snapshot, execute the following command:"
+log
+log "mysql_replication_restore $snapshot_file $binlog_info"
+log

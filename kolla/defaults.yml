@@ -1,5 +1,6 @@
 ---
 openstack_release: rocky
+blazar_tag: stein
 cloud: "envvars"
 
 docker_namespace: kolla
@@ -123,6 +124,7 @@ nova_enabled_filters: "RetryFilter,ComputeCapabilitiesFilter,ImagePropertiesFilt
 
 # Prometheus
 enable_prometheus: no
+prometheus_bind_address: "{{ lookup('vars', 'ansible_' + network_interface).ipv4.address }}"
 
 # Swift
 enable_swift: no
@@ -136,3 +138,6 @@ enable_grafana: no
 
 # External Ceph
 enable_ceph: no
+
+# Chameleon usage
+enable_usage_appliance_report: no
