@@ -81,6 +81,8 @@ if [[ $include_endpoints == 0 ]]; then
     keystone.endpoint_group
     keystone.project_endpoint
     keystone.project_endpoint_group
+    keystone.region
+    keystone.service
   )
 fi
 _do mysqldump keystone \
