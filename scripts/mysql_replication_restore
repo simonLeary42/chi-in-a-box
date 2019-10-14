@@ -88,7 +88,11 @@ _do mysqldump keystone > "$backup_file"
 log "Snapshotting non-replicated tables to $tmpfile ..."
 declare -a nonrepl_tables=(trust trust_role revocation_event)
 if [[ $include_endpoints == 0 ]]; then
-  nonrepl_tables+=(endpoint endpoint_group project_endpoint project_endpoint_group)
+  nonrepl_tables+=(
+    endpoint endpoint_group 
+    project_endpoint project_endpoint_group 
+    region service
+  )
 fi
 _do mysqldump keystone "${nonrepl_tables[@]}" > "$tmpfile"
 
