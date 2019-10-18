@@ -1,7 +1,7 @@
 ---
 openstack_release: rocky
 blazar_tag: stein
-cloud: "envvars"
+cloud: envvars
 
 docker_namespace: kolla
 docker_registry_username: kolla
@@ -11,11 +11,42 @@ kolla_install_type: source
 
 virtualenv: /etc/ansible/venv
 
+# Globus
+globus_openid_metadata_url: https://auth.globus.org/.well-known/openid-configuration
+globus_client_id: 3ffee3f6-f22c-442d-be53-af1bc65285a2
+globus_keystone_idp_id: globus
+
 enable_mariadb: yes
 enable_chrony: yes
 enable_fluentd: yes
 enable_memcached: yes
 enable_rabbitmq: yes
+
+# SSO
+enable_horizon_websso: "{{ enable_horizon_websso_chameleon | bool or enable_horizon_websso_globus | bool }}"
+enable_horizon_websso_chameleon: yes
+enable_horizon_websso_globus: no
+horizon_public_vhost_config: <
+  {% if enable_horizon_websso_globus %}
+  OIDCClaimPrefix "OIDC-"
+  OIDCResponseType "id_token"
+  OIDCScope "openid email profile"
+  OIDCProviderMetadataURL {{ globus_openid_metadata_url }}
+  OIDCClientID {{ globus_client_id }}
+  OIDCClientSecret {{ globus_client_secret }}
+  OIDCCryptoPassphrase openstack
+  OIDCRedirectURI http://localhost:5000/v3/OS-FEDERATION/identity_providers/{{ globus_keystone_idp_id }}/protocols/openid/auth
+
+  <LocationMatch /v3/OS-FEDERATION/identity_providers/.*?/protocols/openid/auth>
+    AuthType openid-connect
+    Require valid-user
+    LogLevel debug
+  </LocationMatch>
+  {% endif %}
+# TODO: put _all_ Horizon deployments here (not just _this_ one), otherwise some
+# Keystones will not allow login against some Horizon instances
+keystone_trusted_dashboards:
+  - "{{ public_protocol }}://{{ kolla_external_fqdn }}/auth/websso/"
 
 # Blazar
 enable_blazar: yes
@@ -59,7 +90,6 @@ enable_heat: yes
 
 # Horizon
 enable_horizon: yes
-enable_horizon_chameleon_websso: yes
 horizon_help_url: https://chameleoncloud.readthedocs.io/en/latest/technical/baremetal.html
 horizon_redirect_root: /dashboard
 horizon_chameleon_websso_host: https://www.chameleoncloud.org
