@@ -26,7 +26,7 @@ enable_rabbitmq: yes
 enable_horizon_websso: "{{ enable_horizon_websso_chameleon | bool or enable_horizon_websso_globus | bool }}"
 enable_horizon_websso_chameleon: yes
 enable_horizon_websso_globus: no
-horizon_public_vhost_config: >
+keystone_public_vhost_config: |
   {% if enable_horizon_websso_globus | bool %}
   OIDCClaimPrefix "OIDC-"
   OIDCResponseType "id_token"
