@@ -1,3 +1,4 @@
+from django.utils.translation import ugettext_lazy as _
 from openstack_dashboard.settings import HORIZON_CONFIG
 from os import environ
 
@@ -74,7 +75,7 @@ SSO_CALLBACK_HOST = '{{ kolla_external_fqdn }}'
 {% if enable_horizon_websso_globus | bool %}
 WEBSSO_CHOICES = (
   ('credentials', _('Keystone Credentials')),
-  ('globus_openid', 'Globus Login'),
+  ('globus_openid', _('Globus Login')),
 )
 WEBSSO_IDP_MAPPING = {
   'globus_openid': ('globus', 'openid'),
