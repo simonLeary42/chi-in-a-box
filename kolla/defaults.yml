@@ -35,19 +35,24 @@ keystone_wsgi_public_vhost_config: |
   OIDCClientID {{ globus_client_id }}
   OIDCClientSecret {{ globus_client_secret }}
   OIDCCryptoPassphrase openstack
-  OIDCRedirectURI {{ keystone_public_url }}/v3/auth/OS-FEDERATION/websso
-  OIDCRedirectURI {{ keystone_public_url }}/v3/auth/OS-FEDERATION/identity_providers/{{ globus_keystone_idp_id }}/protocols/openid/websso
+  OIDCRedirectURI {{ keystone_public_url }}/v3/auth/OS-FEDERATION/identity_providers/{{ globus_keystone_idp_id }}/protocols/openid/auth
 
-  <Location /v3/auth/OS-FEDERATION/websso>
+  <Location /v3/auth/OS-FEDERATION/identity_providers/{{ globus_keystone_idp_id }}/protocols/openid/auth>
     AuthType openid-connect
     Require valid-user
     LogLevel debug
   </Location>
-  <LocationMatch /v3/auth/OS-FEDERATION/identity_providers/.*/protocols/openid/websso>
+  {{ '#' }} WebSSO protected routes
+  <Location /v3/auth/OS-FEDERATION/websso/openid>
     AuthType openid-connect
     Require valid-user
     LogLevel debug
-  </LocationMatch>
+  </Location>
+  <Location /v3/auth/OS-FEDERATION/identity_providers/{{ globus_keystone_idp_id }}/protocols/openid/websso>
+    AuthType openid-connect
+    Require valid-user
+    LogLevel debug
+  </Location>
   {% endif %}
 # TODO: put _all_ Horizon deployments here (not just _this_ one), otherwise some
 # Keystones will not allow login against some Horizon instances
