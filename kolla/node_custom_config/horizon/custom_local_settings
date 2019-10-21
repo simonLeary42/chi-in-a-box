@@ -65,7 +65,7 @@ CHAMELEON_SITES = {
 {% if enable_horizon_websso | bool %}
 # Single-sign on support
 WEBSSO_ENABLED = True
-WEBSSO_KEYSTONE_URL = '{{ keystone_public_url }}'
+WEBSSO_KEYSTONE_URL = '{{ keystone_public_url }}/v3'
 {% if enable_horizon_websso_chameleon | bool %}
 AUTHENTICATION_URLS = ['openstack_dashboard.cc_web_sso_urls','openstack_auth.urls',]
 CHAMELEON_PORTAL_SSO_BASE_URL = '{{ horizon_chameleon_websso_host }}'

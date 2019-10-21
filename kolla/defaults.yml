@@ -26,18 +26,24 @@ enable_rabbitmq: yes
 enable_horizon_websso: "{{ enable_horizon_websso_chameleon | bool or enable_horizon_websso_globus | bool }}"
 enable_horizon_websso_chameleon: yes
 enable_horizon_websso_globus: no
-keystone_public_vhost_config: |
+keystone_wsgi_public_vhost_config: |
   {% if enable_horizon_websso_globus | bool %}
   OIDCClaimPrefix "OIDC-"
-  OIDCResponseType "id_token"
-  OIDCScope "openid email profile"
+  OIDCResponseType "code"
+  OIDCScope "openid email profile urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
   OIDCProviderMetadataURL {{ globus_openid_metadata_url }}
   OIDCClientID {{ globus_client_id }}
   OIDCClientSecret {{ globus_client_secret }}
   OIDCCryptoPassphrase openstack
-  OIDCRedirectURI http://localhost:5000/v3/OS-FEDERATION/identity_providers/{{ globus_keystone_idp_id }}/protocols/openid/auth
+  OIDCRedirectURI {{ keystone_public_url }}/v3/auth/OS-FEDERATION/websso
+  OIDCRedirectURI {{ keystone_public_url }}/v3/auth/OS-FEDERATION/identity_providers/{{ globus_keystone_idp_id }}/protocols/openid/websso
 
-  <LocationMatch /v3/OS-FEDERATION/identity_providers/.*?/protocols/openid/auth>
+  <Location /v3/auth/OS-FEDERATION/websso>
+    AuthType openid-connect
+    Require valid-user
+    LogLevel debug
+  </Location>
+  <LocationMatch /v3/auth/OS-FEDERATION/identity_providers/.*/protocols/openid/websso>
     AuthType openid-connect
     Require valid-user
     LogLevel debug
