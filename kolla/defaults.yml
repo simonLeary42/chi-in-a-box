@@ -11,10 +11,10 @@ kolla_install_type: source
 
 virtualenv: /etc/ansible/venv
 
-# Globus
-globus_openid_metadata_url: https://auth.globus.org/.well-known/openid-configuration
-globus_client_id: 3ffee3f6-f22c-442d-be53-af1bc65285a2
-globus_keystone_idp_id: globus
+# Federation
+openid_metadata_url: https://fip-192-5-87-210.uc.chameleoncloud.org/auth/realms/chameleon/.well-known/openid-configuration
+openid_client_id: keystone
+keystone_federation_idp_id: keycloak
 
 enable_mariadb: yes
 enable_chrony: yes
@@ -30,14 +30,14 @@ keystone_wsgi_public_vhost_config: |
   {% if enable_horizon_websso_globus | bool %}
   OIDCClaimPrefix "OIDC-"
   OIDCResponseType "code"
-  OIDCScope "openid email profile urn:globus:auth:scope:groups.api.globus.org:view_my_groups_and_memberships"
-  OIDCProviderMetadataURL {{ globus_openid_metadata_url }}
-  OIDCClientID {{ globus_client_id }}
-  OIDCClientSecret {{ globus_client_secret }}
+  OIDCScope "openid email profile groups"
+  OIDCProviderMetadataURL {{ openid_metadata_url }}
+  OIDCClientID {{ openid_client_id }}
+  OIDCClientSecret {{ openid_client_secret }}
   OIDCCryptoPassphrase openstack
-  OIDCRedirectURI {{ keystone_public_url }}/v3/auth/OS-FEDERATION/identity_providers/{{ globus_keystone_idp_id }}/protocols/openid/auth
+  OIDCRedirectURI {{ keystone_public_url }}/v3/auth/OS-FEDERATION/identity_providers/{{ keystone_federation_idp_id }}/protocols/openid/auth
 
-  <Location /v3/auth/OS-FEDERATION/identity_providers/{{ globus_keystone_idp_id }}/protocols/openid/auth>
+  <Location /v3/auth/OS-FEDERATION/identity_providers/{{ keystone_federation_idp_id }}/protocols/openid/auth>
     AuthType openid-connect
     Require valid-user
     LogLevel debug
@@ -48,7 +48,7 @@ keystone_wsgi_public_vhost_config: |
     Require valid-user
     LogLevel debug
   </Location>
-  <Location /v3/auth/OS-FEDERATION/identity_providers/{{ globus_keystone_idp_id }}/protocols/openid/websso>
+  <Location /v3/auth/OS-FEDERATION/identity_providers/{{ keystone_federation_idp_id }}/protocols/openid/websso>
     AuthType openid-connect
     Require valid-user
     LogLevel debug
