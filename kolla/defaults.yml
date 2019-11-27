@@ -1,6 +1,5 @@
 ---
-openstack_release: rocky
-blazar_tag: stein
+openstack_release: train
 cloud: "envvars"
 
 docker_namespace: kolla
