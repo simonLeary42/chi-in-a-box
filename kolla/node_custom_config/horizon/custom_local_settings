@@ -70,3 +70,7 @@ CHAMELEON_PORTAL_SSO_LOGIN_PATH = '/sso/horizon/'
 CHAMELEON_PORTAL_SSO_LOGOUT_PATH = '/logout/'
 SSO_CALLBACK_HOST = '{{ kolla_external_fqdn }}'
 {% endif %}
+
+LAUNCH_INSTANCE_DEFAULTS = {
+  "create_volume": False
+}
