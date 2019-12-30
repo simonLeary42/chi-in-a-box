@@ -1,8 +1,11 @@
 # These initial groups are the only groups required to be modified. The
 # additional groups are for more control of the environment.
 [control]
+# These hostname must be resolvable from your deployment host
 <host>
 
+# The network nodes are where your l3-agent and loadbalancers will run
+# This can be the same as a host in the control group
 [network]
 <host>
 
@@ -12,11 +15,16 @@
 [monitoring]
 <host>
 
+# When compute nodes and control nodes use different interfaces,
+# you need to comment out "api_interface" and other interfaces from the globals.yml
+# and specify like below:
+#compute01 neutron_external_interface=eth0 api_interface=em1 storage_interface=em1 tunnel_interface=em1
+
 [storage]
 <host>
 
 [deployment]
-localhost ansible_connection=local
+localhost       ansible_connection=local
 
 [baremetal:children]
 control
@@ -43,12 +51,8 @@ compute
 [grafana:children]
 monitoring
 
-[hammers:children]
-control
-
 [etcd:children]
 control
-compute
 
 [influxdb:children]
 monitoring
@@ -100,7 +104,17 @@ control
 [qdrouterd:children]
 control
 
+[monasca-agent:children]
+compute
+control
+monitoring
+network
+storage
+
 [monasca:children]
+monitoring
+
+[storm:children]
 monitoring
 
 [mongodb:children]
@@ -160,9 +174,12 @@ control
 control
 
 [ceph:children]
-storage
+control
 
 [magnum:children]
+control
+
+[qinling:children]
 control
 
 [sahara:children]
@@ -180,6 +197,10 @@ control
 [aodh:children]
 control
 
+[cyborg:children]
+control
+compute
+
 [congress:children]
 control
 
@@ -195,6 +216,7 @@ control
 [trove:children]
 control
 
+# Tempest
 [tempest:children]
 control
 
@@ -254,9 +276,6 @@ control
 [glance-api:children]
 glance
 
-[glance-registry:children]
-glance
-
 # Nova
 [nova-api:children]
 nova
@@ -264,7 +283,7 @@ nova
 [nova-conductor:children]
 nova
 
-[nova-consoleauth:children]
+[nova-super-conductor:children]
 nova
 
 [nova-novncproxy:children]
@@ -292,9 +311,6 @@ neutron
 [neutron-l3-agent:children]
 neutron
 
-[neutron-lbaas-agent:children]
-neutron
-
 [neutron-metadata-agent:children]
 neutron
 
@@ -302,6 +318,9 @@ neutron
 neutron
 
 [neutron-infoblox-ipam-agent:children]
+neutron
+
+[neutron-metering-agent:children]
 neutron
 
 [ironic-neutron-agent:children]
@@ -337,7 +356,7 @@ storage
 cinder
 
 [cinder-volume:children]
-cinder
+storage
 
 # Cloudkitty
 [cloudkitty-api:children]
@@ -360,9 +379,7 @@ storage
 ironic
 
 [tgtd:children]
-compute
 storage
-ironic
 
 # Karbor
 [karbor-api:children]
@@ -428,7 +445,19 @@ murano
 murano
 
 # Monasca
+[monasca-agent-collector:children]
+monasca-agent
+
+[monasca-agent-forwarder:children]
+monasca-agent
+
+[monasca-agent-statsd:children]
+monasca-agent
+
 [monasca-api:children]
+monasca
+
+[monasca-grafana:children]
 monasca
 
 [monasca-log-api:children]
@@ -440,6 +469,25 @@ monasca
 [monasca-log-persister:children]
 monasca
 
+[monasca-log-metrics:children]
+monasca
+
+[monasca-thresh:children]
+monasca
+
+[monasca-notification:children]
+monasca
+
+[monasca-persister:children]
+monasca
+
+# Storm
+[storm-worker:children]
+storm
+
+[storm-nimbus:children]
+storm
+
 # Ironic
 [ironic-api:children]
 ironic
@@ -447,8 +495,8 @@ ironic
 [ironic-conductor:children]
 ironic
 
-[ironic-inspector]
-# Disabled; we use a separate mechanism for node property discovery
+[ironic-inspector:children]
+ironic
 
 [ironic-pxe:children]
 ironic
@@ -462,6 +510,13 @@ magnum
 
 [magnum-conductor:children]
 magnum
+
+# Qinling
+[qinling-api:children]
+qinling
+
+[qinling-engine:children]
+qinling
 
 # Sahara
 [sahara-api:children]
@@ -483,6 +538,12 @@ solum
 [solum-conductor:children]
 solum
 
+[solum-application-deployment:children]
+solum
+
+[solum-image-builder:children]
+solum
+
 # Mistral
 [mistral-api:children]
 mistral
@@ -493,6 +554,9 @@ mistral
 [mistral-engine:children]
 mistral
 
+[mistral-event-engine:children]
+mistral
+
 # Ceilometer
 [ceilometer-central:children]
 ceilometer
@@ -501,6 +565,9 @@ ceilometer
 ceilometer
 
 [ceilometer-compute:children]
+compute
+
+[ceilometer-ipmi:children]
 compute
 
 # Aodh
@@ -515,6 +582,16 @@ aodh
 
 [aodh-notifier:children]
 aodh
+
+# Cyborg
+[cyborg-api:children]
+cyborg
+
+[cyborg-agent:children]
+compute
+
+[cyborg-conductor:children]
+cyborg
 
 # Congress
 [congress-api:children]
@@ -653,9 +730,6 @@ vitrage
 [vitrage-graph:children]
 vitrage
 
-[vitrage-collector:children]
-vitrage
-
 [vitrage-ml:children]
 vitrage
 
@@ -668,11 +742,11 @@ blazar
 
 # Prometheus
 [prometheus-node-exporter:children]
-control
-network
-compute
-storage
 monitoring
+control
+compute
+network
+storage
 
 [prometheus-mysqld-exporter:children]
 mariadb
@@ -683,39 +757,58 @@ haproxy
 [prometheus-memcached-exporter:children]
 memcached
 
-[prometheus-openstack-exporter:children]
+[prometheus-cadvisor:children]
+monitoring
+control
+compute
+network
+storage
+
+[prometheus-alertmanager:children]
 monitoring
 
-[prometheus-push-gateway:children]
+[prometheus-openstack-exporter:children]
 monitoring
 
 [prometheus-snmp-exporter:children]
 monitoring
 
-[prometheus-ceph-exporter:children]
-ceph-mon
+[prometheus-elasticsearch-exporter:children]
+elasticsearch
 
-[prometheus-cadvisor:children]
+[prometheus-blackbox-exporter:children]
+monitoring
+
+[prometheus-push-gateway:children]
+monitoring
+
+[masakari-api:children]
 control
-network
+
+[masakari-engine:children]
+control
+
+[masakari-monitors:children]
 compute
-storage
-monitoring
 
-[prometheus-alertmanager:children]
-monitoring
+# Chameleon-specific instrumentation here.
+# These are additional services provided by the Chameleon testbed.
 
-[prometheus-jupyterhub-exporter:children]
-jupyterhub
-
-# JupyterHub
-[jupyterhub:children]
+# Hammers
+[hammers:children]
 control
 
-# Experiment precis service(s)
+# Experiment precis
 [precis:children]
 control
 
 # Chameleon vendordata service
 [vendordata:children]
 control
+
+# JupyterHub
+[jupyterhub:children]
+control
+
+[prometheus-jupyterhub-exporter:children]
+jupyterhub
