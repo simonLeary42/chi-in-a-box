@@ -764,6 +764,9 @@ compute
 network
 storage
 
+[prometheus-ceph-exporter:children]
+ceph
+
 [prometheus-alertmanager:children]
 monitoring
 
