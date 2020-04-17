@@ -1,0 +1,13 @@
+---
+- name: Create certificate management script
+  template:
+    src: certbot.j2
+    dest: "{{ node_config }}/certbot"
+    mode: "0700"
+
+- name: Configure haproxy for LetsEncrypt services
+  import_role:
+    name: haproxy-config
+  vars:
+    project_services: "{{ letsencrypt_services }}"
+  when: enable_haproxy | bool

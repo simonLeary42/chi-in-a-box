@@ -1,0 +1,18 @@
+---
+service_name: letsencrypt
+
+letsencrypt_acme_challenge_port: 18081
+
+letsencrypt_services:
+  letsencrypt_acme_challenge_server:
+    group: letsencrypt
+    enabled: true
+    haproxy:
+      letsencrypt_acme_challenge_server:
+        enabled: "{{ enable_letsencrypt }}"
+        frontend_enabled: no
+        mode: "http"
+        external: false
+        listen_port: "{{ letsencrypt_acme_challenge_port }}"
+
+letsencrypt_certbot_image_full: certbot/certbot:latest

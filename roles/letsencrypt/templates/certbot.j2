@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -e -u -o pipefail
+
+op="$1"
+domain="${2:-}"
+
+container_name="letsencrypt_acme_challenge"
+
+docker run --rm -d {{ kolla_toolbox_image_full }} \
+  --name "$container_name" \
+  -p {{ api_interface_address }}:{{ letsencrypt_acme_challenge_port }}:80
+  -v letsencrypt_acme_challenge:/webroot \
+  -w /webroot \
+  python -m SimpleHTTPServer
+
+cleanup() {
+  docker stop "$container_name"
+}
+
+exec_certbot() {
+  docker run --rm {{ letsencrypt_certbot_image_full }} \
+    -v letsencrypt_certs:/etc/letsencrypt \
+    -v letsencrypt_acme_challenge:/webroot \
+    "$@"
+}
+
+trap EXIT cleanup
+
+case "$op" in
+  request)
+    _certbot certonly -n -m {{ letsencrypt_email }} --webroot -w /webroot -d "$2"
+    ;;
+  renew)
+    _certbot renew
+    ;;
+  *)
+    echo "Invalid operation '$op'!"
+    exit 1
+    ;;
+esac

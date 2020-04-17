@@ -729,3 +729,7 @@ keycloak
 
 [keycloak_db:children]
 keycloak
+
+# LetsEncrypt management service
+[letsencrypt:children]
+haproxy
