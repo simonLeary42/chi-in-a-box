@@ -1,4 +1,4 @@
-from openstack_dashboard.settings import HORIZON_CONFIG
+from openstack_dashboard.settings import HORIZON_CONFIG, OPENSTACK_NEUTRON_NETWORK
 from os import environ
 
 # Kolla-ansible defaults this to 'internalURL', which doesn't work when
@@ -103,3 +103,8 @@ OPENSTACK_IMAGE_BACKEND = {
         ('raw', 'Raw'),
     ],
 }
+
+# Disable security groups; Ironic has no built-in support for them. They are
+# already disabled in Neutrn via the ml2_conf.ini overrides; remove them from
+# Horizon so they don't confusingly show up in the UI / throw errors.
+OPENSTACK_NEUTRON_NETWORK['enable_security_groups'] = False
