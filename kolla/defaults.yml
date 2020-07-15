@@ -173,6 +173,7 @@ portal_network: portal
 # Prometheus
 enable_prometheus: no
 prometheus_bind_address: "{{ lookup('vars', 'ansible_' + network_interface).ipv4.address }}"
+prometheus_alertmanager_slack_channel: '#notifications'
 
 # Redfish Monitor
 redfish_monitor_openstack_user: "{{ keystone_admin_username }}"
