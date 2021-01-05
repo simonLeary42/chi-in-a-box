@@ -53,15 +53,14 @@ cp $LATEST $S3DIR
 
 # Create bucket and copy backup file, cleanup file
 docker run --rm -it -v ${S3DIR}:/root/.aws amazon/aws-cli --profile=ceph --endpoint=https://chi.tacc.chameleoncloud.org:7480 --region=us-east-1 s3 mb s3://uc_db_backup
-docker run --rm -it -v ${S3DIR}:/root/.aws amazon/aws-cli --profile=ceph --endpoint=https://chi.tacc.chameleoncloud.org:7480 --region=us-east-1 s3 cp /root/.aws/myfile s3://uc_db_backups
-
-if [ $? -eq 0 ] ; then
-    cleanup
-    touch /tmp/mysqlbackup_success
-fi
+docker run --rm -it -v ${S3DIR}:/root/.aws amazon/aws-cli --profile=ceph --endpoint=https://chi.tacc.chameleoncloud.org:7480 --region=us-east-1 s3 cp /root/.aws/${LATEST} s3://uc_db_backups
 
 # Remove temporary files
 rm -f $TMPFILE
 rm ${S3DIR}/${LATEST}
 
 
+if [ $? -eq 0 ] ; then
+    cleanup
+    touch /tmp/mysqlbackup_success
+fi
