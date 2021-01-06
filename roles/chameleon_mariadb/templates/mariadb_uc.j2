@@ -47,7 +47,7 @@ mysqldump --defaults-extra-file=$TMPFILE --opt --flush-logs --single-transaction
 
 #AWS S3 STUFF cross site backup to tacc.
 # Copy latest backup to /etc/awsconf to mount to container
-LATEST=`ls -rt ${DIR}/${PREFIX}* | tail -1`i
+LATEST=`ls -rt ${DIR}/${PREFIX}* | tail -1`
 LATEST_FILE=`ls -rt ${S3DIR} | grep mysql_backup | tail -1`
 S3DIR="{{ mariadb_backup_s3_conf_dir }}"
 cp $LATEST $S3DIR
