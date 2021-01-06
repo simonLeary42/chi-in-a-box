@@ -38,7 +38,7 @@
   template:
     src: mariadb_uc_x-site_config.j2
     mode: 0700
-    dest: "{{ mariadb_backup_s3_conf_dir }}"/config
+    dest: "{{ mariadb_backup_s3_conf_dir }}/config"
   when: inventory_hostname_short == "admin01" or
         inventory_hostname_short == "admin02"
 
@@ -46,7 +46,7 @@
   template:
     src: mariadb_uc_x-site_credentials.j2
     mode: 0700
-    dest: "{{ mariadb_backup_s3_conf_dir }}"/credentials
+    dest: "{{ mariadb_backup_s3_conf_dir }}/credentials"
   when: inventory_hostname_short == "admin01" or
         inventory_hostname_short == "admin02"
 
