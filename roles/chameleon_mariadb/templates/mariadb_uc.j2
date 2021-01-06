@@ -57,7 +57,7 @@ docker run --rm -it -v ${S3DIR}:/root/.aws amazon/aws-cli --profile=ceph --endpo
 
 # Remove temporary files
 rm -f $TMPFILE
-rm ${S3DIR}/${LATEST}
+rm ${S3DIR}${LATEST}
 
 
 if [ $? -eq 0 ] ; then
