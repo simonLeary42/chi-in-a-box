@@ -49,7 +49,7 @@ mysqldump --defaults-extra-file=$TMPFILE --opt --flush-logs --single-transaction
 # Copy latest backup to /etc/awsconf to mount to container
 S3DIR="{{ mariadb_backup_s3_conf_dir }}"
 LATEST=`ls -rt ${DIR}/${PREFIX}* | tail -1`
-LATEST_FILE=`ls -rt ${S3DIR} | grep mysql_backup | tail -1`
+LATEST_FILE=`ls -rt ${DIR} | grep mysql_backup | tail -1`
 cp $LATEST $S3DIR
 
 # Create bucket and copy backup file, cleanup file
@@ -58,7 +58,7 @@ docker run --rm -it -v ${S3DIR}:/root/.aws amazon/aws-cli --profile=ceph --endpo
 
 # Remove temporary files
 rm -f $TMPFILE
-rm ${S3DIR}${LATEST}
+rm ${S3DIR}${LATEST_FILE}
 
 
 if [ $? -eq 0 ] ; then
