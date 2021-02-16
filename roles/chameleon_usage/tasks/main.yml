@@ -1,4 +1,23 @@
----    
+--- 
+- name: Pull Docker image.
+  docker_image:
+    source: pull
+    name: "{{ chameleon_usage_docker_image }}"
+    force_source: yes
+
+- name: Create config directory.
+  file:
+    path: "{{ chameleon_usage_config_dir }}"
+    state: directory
+    
+- name: Configure my.cnf
+  template:
+    src: my.cnf.j2
+    dest: "{{ chameleon_usage_config_dir }}/my.cnf"
+  vars:
+    mysql_host: "{{ chameleon_usage_mysql_host }}"
+    root_password: "{{ database_password }}"
+
 - name: Create MySQL user
   local_action:
     module: mysql_user
@@ -19,25 +38,6 @@
     docker run --rm --net=host \
     -v "{{ chameleon_usage_config_dir }}/my.cnf:/etc/mysql/my.cnf" \
     {{ chameleon_usage_docker_image }} setup_database --mysql-conf /etc/mysql/my.cnf 2>&1
-
-- name: Pull Docker image.
-  docker_image:
-    source: pull
-    name: "{{ chameleon_usage_docker_image }}"
-    force_source: yes
-
-- name: Create config directory.
-  file:
-    path: "{{ chameleon_usage_config_dir }}"
-    state: directory
-    
-- name: Configure my.cnf
-  template:
-    src: my.cnf.j2
-    dest: "{{ chameleon_usage_config_dir }}/my.cnf"
-  vars:
-    mysql_host: "{{ chameleon_usage_mysql_host }}"
-    root_password: "{{ database_password }}"
 
 - name: Configure chameleon usage data extract docker bash wrapper
   template:
