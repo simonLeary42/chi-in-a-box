@@ -3,4 +3,4 @@
 docker run --rm --net=host \
     -v "{{ chameleon_usage_config_dir }}/my.cnf:/etc/mysql/my.cnf" \
     {{ chameleon_usage_docker_image }} \
-    extract_kvm_data --site {{chameleon_site_name}} --mysql-conf /etc/mysql/my.cnf 2>&1
+    extract_kvm_data --mysql-conf /etc/mysql/my.cnf 2>&1
