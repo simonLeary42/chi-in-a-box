@@ -40,7 +40,7 @@ groups:
 
   - alert: NodeFileSystemAlmostOutOfSpace
     expr: |
-      predict_linear(node_filesystem_avail_bytes{fstype!="tmpfs"}[1h], (3600 * 24 * 3)) 
+      predict_linear(node_filesystem_avail_bytes{fstype!="tmpfs",fstype!="squashfs",fstype!="nsfs"}[1h], (3600 * 24 * 3)) 
         <= 0
     for: 12h
     labels:
